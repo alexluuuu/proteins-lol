@@ -75,7 +75,7 @@ def load_image(basepath, image_id, factor=1):
 	return images
 
 
-def fill_targets(row, label_names, wtf):
+def fill_targets(row, label_names):
 	'''
 
 	'''
@@ -129,7 +129,7 @@ def read_labels(labels_csv):
 	for key in label_names.keys():
 		df[label_names[key]] = 0
 
-	df = df.apply(fill_targets, axis=1, args=((label_names, 0)))
+	df = df.apply(fill_targets, axis=1, args=((label_names)))
 
 	return (df, df['Id'])
 
