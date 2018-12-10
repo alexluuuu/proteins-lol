@@ -1,5 +1,5 @@
 """
-	train.py
+train.py
 
 
 """
@@ -22,12 +22,25 @@ from torchvision import datasets, models, transforms
 from models import *
 from utility.evaluation import *
 from utility.data_prep import *
-
+from utility.initialization import *
 
 def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_inception=False, thresholds = np.array([.5]*28), device="cpu"):
 	'''
-		train_model function adapted from https://pytorch.org/tutorials/beginner/finetuning_torchvision_models_tutorial.html
-
+	train_model function adapted from https://pytorch.org/tutorials/beginner/finetuning_torchvision_models_tutorial.html
+	
+	Args:
+	    model (TYPE): Description
+	    dataloaders (TYPE): Description
+	    criterion (TYPE): Description
+	    optimizer (TYPE): Description
+	    num_epochs (int, optional): Description
+	    is_inception (bool, optional): Description
+	    thresholds (TYPE, optional): Description
+	    device (str, optional): Description
+	
+	Returns:
+	    TYPE: Description
+	
 	'''
 	since = time.time()
 
@@ -50,7 +63,6 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
 				model.eval()   # Set model to evaluate mode
 
 			running_loss = 0.0
-			running_corrects = 0
 
 			# Iterate over data.
 			for i, batch in enumerate(dataloaders[phase]):
@@ -71,15 +83,8 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
 					# Special case for inception because in training it has an auxiliary output. In train
 					#   mode we calculate the loss by summing the final output and the auxiliary output
 					#   but in testing we only consider the final output.
-					if is_inception and phase == 'train':
-						# From https://discuss.pytorch.org/t/how-to-optimize-inception-model-with-auxiliary-classifiers/7958
-#                        outputs, aux_outputs = model(inputs)
-						loss1 = criterion(outputs, labels)
-#                        loss2 = criterion(aux_outputs, labels)
-						loss = loss1 + 0.4*loss2
-					else:
-						outputs = model(inputs)
-						loss = criterion(outputs, labels)
+					outputs = model(inputs)
+					loss = criterion(outputs, labels)
 
 					preds = np.array([out > thresholds for out in outputs.data.numpy()])
 
@@ -111,7 +116,11 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
 			if phase == 'train':
 				train_loss_history.append(epoch_loss)
 
-		print()
+		print('Training/Val histories at epoch %d:'%epoch)
+		print(train_loss_history)		
+		print(val_loss_history)
+		print(val_F1_history)
+
 
 	time_elapsed = time.time() - since
 
@@ -125,8 +134,18 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
 	return model, optimizer, {'val_F1': val_F1_history, 'val_loss': val_loss_history, 'train_loss': train_loss_history}
 
 
-def run_training(model=None, optimizer=None, loss=None, labels_csv='./data/train.csv', root_dir='./data/train/', **kwargs):
+def run_training(model=None, optimizer=None, loss=None, labels_csv='./data/train.csv', root_dir='./data/train/', train_options = None):
 	'''
+	Args:
+	    model (None, optional): Description
+	    optimizer (None, optional): Description
+	    loss (None, optional): Description
+	    labels_csv (str, optional): Description
+	    root_dir (str, optional): Description
+	    train_options (None, optional): Description
+	
+	Returns:
+	    TYPE: Description
 	
 	'''
 	torch.cuda.empty_cache()
@@ -142,6 +161,9 @@ def run_training(model=None, optimizer=None, loss=None, labels_csv='./data/train
 		assert loss is not None, "loss not provided"
 		return
 
+	if train_options is None:
+		train_options = {'num_epochs': 5}
+
 	dataloaders = get_data_loaders(labels_csv=labels_csv, root_dir = root_dir, ds_from_pkl = True)
 
 	model, optimizer, metrics = train_model(model, 
@@ -149,32 +171,34 @@ def run_training(model=None, optimizer=None, loss=None, labels_csv='./data/train
 		#criterion=nn.BCEWithLogitsLoss(reduction='sum'),
 		criterion=loss,
 		optimizer=optimizer,
-		num_epochs=num_epochs, 
-		thresholds = np.array([.5]*28)
+		num_epochs=train_options['num_epochs'], 
 		)
 
 	return model, optimizer, metrics
 
 
 def main():
-
+	"""Summary
+	"""
 	options = {
-		"model": "simple_CNN",
+		"model": "v2",
 		"optimizer": "adam",
-		"loss": "FocalLoss"
-		"model_continue": "./utility/weights/simple_cnn_2018_11_17.pt",
+		"loss": "FocalLoss",
+		#"model_continue": "./utility/weights/simple_cnn_2018_11_17.pt",
+		"model_continue": None,
 		"optim_continue": None,
 	}
 
 	train_options = {
-		"num_epochs": 20
+		"num_epochs": 9
 	}
 
 	# set up basic paths
 	labels_csv='./data/train.csv'
 	root_dir='./data/train/'
-	model_save_loc = './utility/weights/simple_cnn_2018_11_17.pt'
-	optim_save_loc = './utility/weights/adam_2018_11_19.pt'
+	model_save_loc = "./utility/weights/larger_architecture_2018_11_29.pt"
+#	model_save_loc = './utility/weights/simple_cnn_2018_11_17.pt'
+	optim_save_loc = './utility/weights/adam_2018_11_29.pt'
 
 	# set up the model, optimizer, loss based on options
 	model, optimizer, loss = initialize(options)
@@ -185,7 +209,7 @@ def main():
 											loss = loss,
 											labels_csv=labels_csv,
 											root_dir = root_dir,
-											train_options
+											train_options=train_options
 											)
 
 	# save the model
@@ -197,9 +221,7 @@ def main():
 	# write log 
 	write_log(model_save_loc, optim_save_loc, metrics)
 
-
-
-	print(history)
+	print(metrics)
 
 
 

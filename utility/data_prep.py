@@ -1,5 +1,5 @@
 '''
-	data_prep.py
+data_prep.py
 '''
 
 import pandas as pd
@@ -7,6 +7,7 @@ import numpy as np
 import subprocess
 import pickle
 import os
+import datetime
 
 from skimage import io
 from skimage.transform import rescale, resize
@@ -18,8 +19,22 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 class HumanProteinDataset(Dataset):
     '''
+    Attributes:
+        label_names (TYPE): Description
+        labels_df (TYPE): Description
+        raw_h (int): Description
+        raw_w (int): Description
+        root_dir (TYPE): Description
+        transform (TYPE): Description
     '''
     def __init__(self, labels_csv, root_dir, transform=None):
+        """Summary
+        
+        Args:
+            labels_csv (TYPE): Description
+            root_dir (TYPE): Description
+            transform (None, optional): Description
+        """
         self.label_names = {
             0:  "Nucleoplasm",  
             1:  "Nuclear membrane",   
@@ -63,22 +78,41 @@ class HumanProteinDataset(Dataset):
         self.raw_w = 512
         
     def __len__(self):
+        """Summary
+        
+        Returns:
+            TYPE: Description
+        """
         return len(self.labels_df)
     
     def __getitem__(self, idx):
         '''
+        Args:
+            idx (TYPE): Description
+        
+        Returns:
+            TYPE: Description
         
         '''
 #        image_base = os.path.join(self.root_dir, self.labels_df.iloc[idx, 0])
         image_stack = self._load_image(self.labels_df.iloc[idx, 0])
         
-        sample = {'stack': image_stack, 'labels': self.labels_df['Target'].iloc[idx]}
+        sample = {'stack': image_stack, 'labels': self.labels_df['Target'].iloc[idx], 'idx': idx}
         if self.transform: 
             sample = self.transform(sample)
             
         return sample
     
     def _load_image(self, image_id, factor = 1):
+        """Summary
+        
+        Args:
+            image_id (TYPE): Description
+            factor (int, optional): Description
+        
+        Returns:
+            TYPE: Description
+        """
         image_stack = np.zeros((4,self.raw_w,self.raw_h))
         image_stack[0,:,:] = io.imread(self.root_dir + image_id + "_green" + ".png")
         image_stack[1,:,:] = io.imread(self.root_dir + image_id + "_red" + ".png")
@@ -98,12 +132,27 @@ class HumanProteinDataset(Dataset):
 
 class Rescale(object):
     '''
+    Attributes:
+        scaled_dims (TYPE): Description
     '''
     
     def __init__(self, scaled_dims):
+        """Summary
+        
+        Args:
+            scaled_dims (TYPE): Description
+        """
         self.scaled_dims = scaled_dims
     
     def __call__(self, sample):
+        """Summary
+        
+        Args:
+            sample (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
         stack_raw = sample['stack']
         
         stack_scaled = np.zeros(shape = (4, self.scaled_dims[0], self.scaled_dims[1]))
@@ -112,11 +161,23 @@ class Rescale(object):
         stack_scaled[2,:,:] = resize(stack_raw[2, :, :], self.scaled_dims)
         stack_scaled[3,:,:] = resize(stack_raw[3, :, :], self.scaled_dims)
         
-        return {'stack': stack_scaled, 'labels':sample['labels']}
+        return {'stack': stack_scaled, 'labels':sample['labels'], 'idx':sample['idx']}
 
 
 class ToTensor(object):
+
+    """Summary
+    """
+    
     def __call__(self, sample):
+        """Summary
+        
+        Args:
+            sample (TYPE): Description
+        
+        Returns:
+            TYPE: Description
+        """
         temp = sample['stack']/255.0
         totensor = transforms.ToTensor()
         sample['stack'] = totensor(temp.transpose((1, 2, 0)))
@@ -125,6 +186,13 @@ class ToTensor(object):
 
 def get_data_loaders(labels_csv = './data/train.csv', root_dir = './data/train/', ds_from_pkl=False):
     '''
+    Args:
+        labels_csv (str, optional): Description
+        root_dir (str, optional): Description
+        ds_from_pkl (bool, optional): Description
+    
+    Returns:
+        TYPE: Description
     
     '''
     if ds_from_pkl:
@@ -155,7 +223,13 @@ def gather_image_set(imagedir):
 	Use a subprocess to ls into the provided image directory and list the content files. 
 	More advanced features can be performed by adding regex to the subprocess, but it is not necessary with our 
 	current organization. 
-
+	
+	Args:
+	    imagedir (TYPE): Description
+	
+	Returns:
+	    TYPE: Description
+	
 	'''
 	   
 	sp = subprocess.Popen('ls ' + imagedir, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -163,17 +237,46 @@ def gather_image_set(imagedir):
 	return (len(image_files), image_files)
 
 
-def write_log(model_save_loc, optim_save_loc, metrics):
+def write_log(model_save_loc, optim_save_loc, metrics, log_location='./training_logs/'):
 	'''
+	Args:
+	    model_save_loc (TYPE): Description
+	    optim_save_loc (TYPE): Description
+	    metrics (TYPE): Description
+	    log_location (str, optional): Description
+	
+	Returns:
+	    TYPE: Description
 	'''
 
-	print 'writing log '
+	print('writing log')
 	
+
+	now = datetime.datetime.now()
+	log_name = 'log_{}_{}_{}_{}'.format(now.year, now.month, now.day, now.hour)
+
+	metric_save = log_location + 'metrics/' + log_name + '_' + str(now.minute) + '_metrics' + '.pkl'
+	with open(metric_save, 'wb') as metric_f:
+		pickle.dump(metrics, metric_f)
+
+	with open(log_location + log_name + '.txt' , "a") as f:
+		f.write('trainined a model at time ' + str(now) + '\n')
+		f.write('achieved max F1: ' + str(max(metrics['val_F1'])) + '\n')
+		f.write('model is saved at: ' + model_save_loc + '\n')
+		f.write('optim is saved at: ' + optim_save_loc + '\n')
+		f.write('metrics are saved at: ' + metric_save + '\n')
+		f.write('---------------------- \n\n')
+
+	return
 
 
 def write_to_file(name, obj):
 	'''
-		Write object of specified name to a pickle file 
+	Write object of specified name to a pickle file 
+	
+	Args:
+	    name (TYPE): Description
+	    obj (TYPE): Description
 	'''
 
 	print 'writing structures to pickle'
@@ -187,7 +290,13 @@ def write_to_file(name, obj):
 
 def read_from_file(name):
 	'''
-		Return loaded object given by input name
+	Return loaded object given by input name
+	
+	Args:
+	    name (TYPE): Description
+	
+	Returns:
+	    TYPE: Description
 	'''
 	print 'reading structures from pickle'
 	print '------------------------------'
@@ -202,7 +311,14 @@ def read_from_file(name):
 
 def load_image(basepath, image_id, factor=1):
 	'''
-
+	Args:
+	    basepath (TYPE): Description
+	    image_id (TYPE): Description
+	    factor (int, optional): Description
+	
+	Returns:
+	    TYPE: Description
+	
 	'''
 	#print 'loading image with image_id', image_id, '\r'
 	images = np.zeros((4,512,512))
@@ -224,7 +340,13 @@ def load_image(basepath, image_id, factor=1):
 
 def fill_targets(row, label_names):
 	'''
-
+	Args:
+	    row (TYPE): Description
+	    label_names (TYPE): Description
+	
+	Returns:
+	    TYPE: Description
+	
 	'''
 
 	row.Target = np.array(row.Target.split(" ")).astype(np.int)
@@ -236,7 +358,12 @@ def fill_targets(row, label_names):
 
 def read_labels(labels_csv):
 	'''
-
+	Args:
+	    labels_csv (TYPE): Description
+	
+	Returns:
+	    TYPE: Description
+	
 	'''
 	print 'reading the label csv'
 
@@ -283,6 +410,12 @@ def read_labels(labels_csv):
 
 def get_labels(df, id_set):
 	'''
+	Args:
+	    df (TYPE): Description
+	    id_set (TYPE): Description
+	
+	Returns:
+	    TYPE: Description
 	'''
 
 	print 'extracting labels'
@@ -292,6 +425,11 @@ def get_labels(df, id_set):
 
 
 def partition_data(full_set):
+	"""Summary
+	
+	Args:
+	    full_set (TYPE): Description
+	"""
 	pass
 
 
@@ -303,11 +441,12 @@ if __name__ == "__main__":
 	# labels_csv = "data/train.csv"
 	# df, image_ids = read_labels(labels_csv)
 
-	loaders = get_data_loaders()
-	train_loader = loaders['train']
-	print train_loader
-	for x in train_loader:
-		for i, j in x.iteritems():
-			print i
-			print j
+	# loaders = get_data_loaders()
+	# train_loader = loaders['train']
+	# print train_loader
+	# for x in train_loader:
+	# 	for i, j in x.iteritems():
+	# 		print i
+	# 		print j
 
+	write_log('./utility/weights/simple_cnn_2018_11_17.pt', './utility/weights/simple_cnn_2018_11_17.pt', {'val_F1': [0, 0, 0]})

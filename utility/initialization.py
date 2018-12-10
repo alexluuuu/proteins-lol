@@ -1,5 +1,5 @@
 """
-	initialization.py
+initialization.py
 
 """
 import os
@@ -9,23 +9,39 @@ from data_prep import *
 from evaluation import * 
 import torch
 
+
+def init_weights(m):
+    if type(m) == nn.Linear:
+        torch.nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.01)
+
+
 def initialize(options): 
 	'''
-	input: 
-		* options, a dict containing options 
 
-	output: 
+	output:
 		* model 
 		* optimizer
 		* loss function 
+	
+	Args:
+	    options (dict): Description
+	
+	Returns:
+	    TYPE: Description
 	'''
 
 	# define model
 	if options['model'] == 'simple_CNN':
 		model = simple_CNN()
 		model.apply(init_weights)
+
+	elif options['model'] == 'v2': 
+		model = larger_architecture()
+		model.apply(init_weights)
+
 	if options['model_continue'] is not None:
-		model = torch.load(options['model_continue'])
+		model.load_state_dict(torch.load(options['model_continue']))
 
 	# define optimizer
 	if options['optimizer'] == 'adam': 
@@ -36,6 +52,5 @@ def initialize(options):
 	# define loss
 	if options['loss'] == 'FocalLoss':
 		loss = FocalLoss()
-
 
 	return model, optimizer, loss

@@ -1,6 +1,6 @@
 '''
-	evaluation.py
-	contains the evaluation metrics for all the shit we're going to be doing
+evaluation.py
+contains the evaluation metrics for all the shit we're going to be doing
 '''
 	
 import numpy as np
@@ -14,14 +14,33 @@ from data_prep import *
 
 class FocalLoss(nn.Module):
 	'''
-
+	Attributes:
+	    gamma (TYPE): Description
+	
 	'''
 	def __init__(self, gamma=2):
+		"""Summary
+		
+		Args:
+		    gamma (int, optional): Description
+		"""
 		super(FocalLoss, self).__init__()
 		self.gamma = gamma
 		
 
 	def forward(self, pred, target):
+		"""Summary
+		
+		Args:
+		    pred (TYPE): Description
+		    target (TYPE): Description
+		
+		Returns:
+		    TYPE: Description
+		
+		Raises:
+		    ValueError: Description
+		"""
 		if not (target.size() == pred.size()):
 			raise ValueError("Target size ({}) must be the same as pred size ({})"
 							 .format(target.size(), pred.size()))
@@ -38,6 +57,13 @@ class FocalLoss(nn.Module):
 
 def evaluate(predictions, labels, metric='f1'):
 	'''
+	Args:
+	    predictions (TYPE): Description
+	    labels (TYPE): Description
+	    metric (str, optional): Description
+	
+	Returns:
+	    TYPE: Description
 	'''
 
 	if metric =='f1':
