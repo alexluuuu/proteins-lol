@@ -8,6 +8,7 @@ import numpy as np
 import torch.optim as optim
 import torch.nn as nn
 
+
 class larger_architecture(nn.Module):
 	"""
 		This one is v2
