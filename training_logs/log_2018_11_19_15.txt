@@ -1,0 +1,7 @@
+trainined a model at time 2018-11-19 15:26:27.204877
+achieved max F1: 0
+model is saved at: ./utility/weights/simple_cnn_2018_11_17.pt
+optim is saved at: ./utility/weights/simple_cnn_2018_11_17.pt
+metrics are saved at: ./training_logs/metrics/log_2018_11_19_15_26_metrics.pkl
+---------------------- 
+

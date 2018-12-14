@@ -1,6 +1,7 @@
 """
 initialization.py
 
+some of the functions that we can use to initialize our models, including loading from previous states or performing Xavier initialization.
 """
 import os
 import sys
@@ -18,17 +19,14 @@ def init_weights(m):
 
 def initialize(options): 
 	'''
+	input: 
+		* options, a dictionary containing all the paths and stuff that we're going to use to set up our training
 
 	output:
-		* model 
-		* optimizer
-		* loss function 
+		* model 		-- the model 
+		* optimizer		-- optimizer that we're going to use
+		* loss function -- loss function 
 	
-	Args:
-	    options (dict): Description
-	
-	Returns:
-	    TYPE: Description
 	'''
 
 	# define model

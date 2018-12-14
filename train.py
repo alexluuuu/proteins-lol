@@ -96,9 +96,10 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
 				# statistics
 				running_loss += loss.item() * inputs.size(0)
 				print('Batch: {} | Epoch: {} | loss contribution: {}'.format(i, epoch, loss.item()*inputs.size(0)))
-				# running_corrects += torch.sum(preds == labels.data)
 
 			epoch_loss = running_loss / len(dataloaders[phase].dataset)
+
+			# compute the F1 score for this epoch
 			epoch_F1 = np.mean(np.array(
 				[ evaluate(pred, label) for pred, label in zip(preds, labels.data.numpy() ) ]
 				)
@@ -198,7 +199,6 @@ def main():
 	root_dir='./data/train/'
 	model_save_loc = "./utility/weights/larger_architecture_2018_11_29.pt"
 #	model_save_loc = './utility/weights/simple_cnn_2018_11_17.pt'
-	optim_save_loc = './utility/weights/adam_2018_11_29.pt'
 
 	# set up the model, optimizer, loss based on options
 	model, optimizer, loss = initialize(options)
@@ -215,14 +215,10 @@ def main():
 	# save the model
 	torch.save(model.state_dict(), model_save_loc)
 
-	# save the optimizer
-	optimizer.save(optimizer.state_dict(), optim_save_loc)
-
 	# write log 
-	write_log(model_save_loc, optim_save_loc, metrics)
+	write_log(model_save_loc, metrics)
 
 	print(metrics)
-
 
 
 if __name__ == "__main__":

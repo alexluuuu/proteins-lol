@@ -61,20 +61,25 @@ These are images in which the protein of interest has a plasma membrane localiza
 
 ### Dependencies
 
-The project uses the following dependencies. 
+The project uses the following dependencies in Python 2. 
 
 ```
 numpy
+pandas
 torch
 skimage
 sklearn
 ```
 
-### Running the Code: 
-The models are contained in `models.py`. The models can be trained calling `python train.py` from the top level. The best model can be executed using `python test.py`. 
+### Code Structure: 
+
+The models are contained in `models.py`. Utility functions are defined in files in the folder `utility/`, including `data_prep.py`, `evaluation.py`, `initialization.py`. The data would be contained within a top level directory `data`, containing `data/train`, `data/test` for train and test data respectively. `data` also contains a csv `train.csv` containing the labels for the training data. Because this is a Kaggle challenge, the ground truth test set labels are not provided.
+
+The models can be trained calling `python train.py` from the top level. The best model from training can be evaluated using `python test.py`. 
 
 
-### Sources: 
+
+### Some Sources: 
 [Classification of protein motifs based on subcellular localization uncovers evolutionary relationships at both sequence and functional levels](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-14-229)
 
 [Deep learning is combined with massive-scale citizen science to improve large-scale image classification](https://www.nature.com/articles/nbt.4225)
